@@ -80,6 +80,12 @@ EXPORTS
     json_set_alloc_funcs2
     json_get_alloc_funcs
     json_get_alloc_funcs2
+    json_refledger_init
+    json_refledger_close
+    json_refledger_object_new
+    json_refledger_object_set
+    json_refledger_object_set_new
+    json_refledger_get
     jansson_version_str
     jansson_version_cmp
 

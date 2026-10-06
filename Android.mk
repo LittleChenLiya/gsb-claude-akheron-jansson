@@ -11,6 +11,7 @@ LOCAL_SRC_FILES := \
     src/load.c \
     src/memory.c \
     src/pack_unpack.c \
+    src/refledger.c \
     src/strbuffer.c \
     src/strconv.c \
     src/utf.c \

@@ -1,6 +1,6 @@
 EXTRA_DIST = jansson.def dtoa.c
 
-include_HEADERS = jansson.h
+include_HEADERS = jansson.h jansson_refledger.h
 nodist_include_HEADERS = jansson_config.h
 
 lib_LTLIBRARIES = libjansson.la
@@ -11,10 +11,12 @@ libjansson_la_SOURCES = \
 	hashtable.h \
 	hashtable_seed.c \
 	jansson_private.h \
+	jansson_refledger.h \
 	load.c \
 	lookup3.h \
 	memory.c \
 	pack_unpack.c \
+	refledger.c \
 	strbuffer.c \
 	strbuffer.h \
 	strconv.c \

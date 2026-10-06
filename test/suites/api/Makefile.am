@@ -17,6 +17,7 @@ check_PROGRAMS = \
 	test_number \
 	test_object \
 	test_pack \
+	test_refledger \
 	test_simple \
 	test_sprintf \
 	test_unpack \
@@ -36,6 +37,7 @@ test_memory_funcs_realloc_SOURCES = test_memory_funcs_realloc.c util.h
 test_number_SOURCES = test_number.c util.h
 test_object_SOURCES = test_object.c util.h
 test_pack_SOURCES = test_pack.c util.h
+test_refledger_SOURCES = test_refledger.c util.h
 test_simple_SOURCES = test_simple.c util.h
 test_sprintf_SOURCES = test_sprintf.c util.h
 test_unpack_SOURCES = test_unpack.c util.h

@@ -96,6 +96,12 @@ char *jsonp_strndup(const char *str, size_t len) JANSSON_ATTRS((warn_unused_resu
 int jsonp_loop_check(hashtable_t *parents, const json_t *json, char *key, size_t key_size,
                      size_t *key_len_out);
 
+/* Debug reference ledger (refledger.c).  Observing-only hook called at
+   the top of json_delete(); NULL by default so the reference API keeps
+   its default behaviour.  The observer must not change reference counts
+   and must not free the object. */
+extern void (*jsonp_refledger_delete_observer)(json_t *);
+
 /* Windows compatibility */
 #if defined(_WIN32) || defined(WIN32)
 #if defined(_MSC_VER) /* MS compiller */

@@ -994,6 +994,11 @@ void json_delete(json_t *json) {
     if (!json)
         return;
 
+    /* Debug reference ledger hook: observing only, NULL unless a
+       json_refledger_t is active.  Never alters the freeing below. */
+    if (jsonp_refledger_delete_observer)
+        jsonp_refledger_delete_observer(json);
+
     switch (json_typeof(json)) {
         case JSON_OBJECT:
             json_delete_object(json_to_object(json));

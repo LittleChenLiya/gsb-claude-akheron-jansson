@@ -264,6 +264,7 @@ configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/jansson_config.h.cmake
 
 # Copy the jansson.h file to the public include folder
 file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson_refledger.h
            DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/)
 
 # configure the private config file
@@ -290,7 +291,8 @@ set(JANSSON_HDR_PRIVATE
 
 set(JANSSON_HDR_PUBLIC
    ${CMAKE_CURRENT_BINARY_DIR}/include/jansson_config.h
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson.h)
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson.h
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/jansson_refledger.h)
 
 source_group("Library Sources" FILES ${JANSSON_SRC})
 source_group("Library Private Headers" FILES ${JANSSON_HDR_PRIVATE})
@@ -373,6 +375,8 @@ add_library( jansson::jansson ALIAS jansson )
 if (JANSSON_EXAMPLES)
 	add_executable(simple_parse "${CMAKE_CURRENT_SOURCE_DIR}/examples/simple_parse.c")
 	target_link_libraries(simple_parse jansson)
+	add_executable(refledger_three "${CMAKE_CURRENT_SOURCE_DIR}/examples/refledger_three.c")
+	target_link_libraries(refledger_three jansson)
 endif()
 
 # For building Documentation (uses Sphinx)
@@ -506,6 +510,7 @@ if (NOT JANSSON_WITHOUT_TESTS)
          test_number
          test_object
          test_pack
+         test_refledger
          test_simple
          test_sprintf
          test_unpack)
