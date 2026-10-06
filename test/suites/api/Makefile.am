@@ -1,6 +1,7 @@
 EXTRA_DIST = run check-exports
 
 check_PROGRAMS = \
+	test_alloc_fail \
 	test_array \
 	test_chaos \
 	test_chaos_realloc \
@@ -22,6 +23,7 @@ check_PROGRAMS = \
 	test_unpack \
 	test_version
 
+test_alloc_fail_SOURCES = test_alloc_fail.c util.h
 test_array_SOURCES = test_array.c util.h
 test_chaos_SOURCES = test_chaos.c util.h
 test_chaos_realloc_SOURCES = test_chaos_realloc.c util.h

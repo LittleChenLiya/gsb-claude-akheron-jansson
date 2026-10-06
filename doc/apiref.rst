@@ -2025,6 +2025,52 @@ http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/protect-secrets.ht
 The page also explains the :func:`guaranteed_memset()` function used
 in the example and gives a sample implementation for it.
 
+.. _apiref-alloc-failure-injection:
+
+Allocation Failure Injection Contract
+-------------------------------------
+
+Tests (and embedders) may install a *counting/failing* allocator for
+the duration of a single test scope and restore the previous one
+afterwards, without touching the real system allocator
+configuration::
+
+    json_malloc_t saved_malloc;
+    json_free_t saved_free;
+
+    json_get_alloc_funcs(&saved_malloc, &saved_free);  /* save */
+    json_set_alloc_funcs(counting_malloc, counting_free);
+    /* ... run operations under failure injection ... */
+    json_set_alloc_funcs(saved_malloc, saved_free);    /* restore */
+
+The contract guaranteed by the library under such injection is:
+
+* When an allocation fails in the middle of building an array, an
+  object or a deep copy, every resource acquired by that operation is
+  released before the call returns; the operation reports failure
+  (``NULL`` or ``-1``) and never yields half a JSON value.
+* Containers that existed before the failed operation keep their
+  content and remain usable; the next legal construction works once
+  the injection is switched off.
+* Reclamation can be verified by paired counting inside the allocator
+  hooks (``allocs == frees``, i.e. live allocations return to zero).
+  Only actual allocations are counted; nothing is rebuilt to recompute
+  the counts.
+
+The allocation points that may fail are located in
+``src/value.c`` (value structs, ``hashtable_init()`` buckets,
+``json_object_deep_copy()``/``json_array_deep_copy()`` which
+``json_decref()`` the partial result on mid-way failure),
+``src/hashtable.c`` (pair and key duplication, rehash), and the
+construction paths in ``src/pack_unpack.c`` and ``src/load.c``.
+
+A ready-made fixture implementing this contract lives in
+``test/suites/api/test_alloc_fail.c``. Build and run it with a
+single-job small command::
+
+    cmake --build build --target test_alloc_fail -j1
+    cd build && ctest -R "^test_alloc_fail$" -j1 --output-on-failure
+
 .. _fixed_length_keys:
 
 Fixed-Length keys
