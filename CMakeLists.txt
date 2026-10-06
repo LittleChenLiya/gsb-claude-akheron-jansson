@@ -492,6 +492,7 @@ if (NOT JANSSON_WITHOUT_TESTS)
    endif ()
 
    set(api_tests
+         test_alloc_fail
          test_array
          test_chaos
          test_chaos_realloc

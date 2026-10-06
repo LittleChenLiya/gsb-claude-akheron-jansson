@@ -42,6 +42,7 @@ Contents
    tutorial
    conformance
    threadsafety
+   allocfailure
    apiref
    changes
 
