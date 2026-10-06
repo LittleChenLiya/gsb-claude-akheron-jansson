@@ -190,6 +190,7 @@ json_t *json_object_get(const json_t *object, const char *key)
     JANSSON_ATTRS((warn_unused_result));
 json_t *json_object_getn(const json_t *object, const char *key, size_t key_len)
     JANSSON_ATTRS((warn_unused_result));
+int json_object_set(json_t *object, const char *key, json_t *value);
 int json_object_set_new(json_t *object, const char *key, json_t *value);
 int json_object_setn_new(json_t *object, const char *key, size_t key_len, json_t *value);
 int json_object_set_new_nocheck(json_t *object, const char *key, json_t *value);
@@ -244,10 +245,6 @@ int json_object_iter_set_new(json_t *object, void *iter, json_t *value);
     for (index = 0;                                                                      \
          index < json_array_size(array) && (value = json_array_get(array, index));       \
          index++)
-
-static JSON_INLINE int json_object_set(json_t *object, const char *key, json_t *value) {
-    return json_object_set_new(object, key, json_incref(value));
-}
 
 static JSON_INLINE int json_object_setn(json_t *object, const char *key, size_t key_len,
                                         json_t *value) {
@@ -398,6 +395,43 @@ int json_dumpfd(const json_t *json, int output, size_t flags);
 int json_dump_file(const json_t *json, const char *path, size_t flags);
 int json_dump_callback(const json_t *json, json_dump_callback_t callback, void *data,
                        size_t flags);
+
+/* debug ledger for the reference API
+
+   The ledger observes json_object(), json_object_set() and
+   json_object_set_new() and records one ownership event per call, keyed
+   by the real object identity (the json_t pointer), never by refcount
+   values alone.  It is strictly observational: it does not change any
+   reference count and never frees an observed object.  Closing the
+   ledger releases only the ledger's own memory.  When no ledger is
+   open, the reference API behaves exactly as before. */
+
+typedef enum {
+    JSON_LEDGER_NEW = 0,    /* json_object(): a new object was created */
+    JSON_LEDGER_RETAIN = 1, /* json_object_set(): the object took a new
+                               reference, the caller keeps its own */
+    JSON_LEDGER_STEAL = 2   /* json_object_set_new(): the object stole the
+                               caller's reference */
+} json_ledger_event_type_t;
+
+typedef struct {
+    json_ledger_event_type_t type;
+    const json_t *object; /* identity of the target object (NEW: the created
+                             object) */
+    const json_t *value;  /* identity of the stored value (NEW: same as
+                             object) */
+    const char *key;      /* ledger-owned copy of the key (NEW: NULL) */
+    size_t refcount;      /* refcount of value observed at record time,
+                             informational only */
+} json_ledger_event_t;
+
+typedef struct json_ledger json_ledger_t;
+
+json_ledger_t *json_ledger_open(void);
+void json_ledger_close(json_ledger_t *ledger);
+size_t json_ledger_size(const json_ledger_t *ledger);
+const json_ledger_event_t *json_ledger_get(const json_ledger_t *ledger, size_t index);
+void json_ledger_dump(const json_ledger_t *ledger, FILE *stream);
 
 /* custom memory allocation */
 

@@ -12,6 +12,7 @@ check_PROGRAMS = \
 	test_load \
 	test_load_callback \
 	test_loadb \
+	test_ledger \
 	test_memory_funcs \
 	test_memory_funcs_realloc \
 	test_number \
@@ -31,6 +32,7 @@ test_dump_callback_SOURCES = test_dump_callback.c util.h
 test_fixed_size_SOURCES = test_fixed_size.c util.h
 test_load_SOURCES = test_load.c util.h
 test_loadb_SOURCES = test_loadb.c util.h
+test_ledger_SOURCES = test_ledger.c util.h
 test_memory_funcs_SOURCES = test_memory_funcs.c util.h
 test_memory_funcs_realloc_SOURCES = test_memory_funcs_realloc.c util.h
 test_number_SOURCES = test_number.c util.h

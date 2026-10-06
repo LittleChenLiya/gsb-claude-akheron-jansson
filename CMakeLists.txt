@@ -373,6 +373,8 @@ add_library( jansson::jansson ALIAS jansson )
 if (JANSSON_EXAMPLES)
 	add_executable(simple_parse "${CMAKE_CURRENT_SOURCE_DIR}/examples/simple_parse.c")
 	target_link_libraries(simple_parse jansson)
+	add_executable(ledger_three_objects "${CMAKE_CURRENT_SOURCE_DIR}/examples/ledger_three_objects.c")
+	target_link_libraries(ledger_three_objects jansson)
 endif()
 
 # For building Documentation (uses Sphinx)
@@ -503,6 +505,7 @@ if (NOT JANSSON_WITHOUT_TESTS)
          test_load
          test_load_callback
          test_loadb
+         test_ledger
          test_number
          test_object
          test_pack

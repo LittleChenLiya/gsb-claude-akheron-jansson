@@ -11,6 +11,7 @@ libjansson_la_SOURCES = \
 	hashtable.h \
 	hashtable_seed.c \
 	jansson_private.h \
+	ledger.c \
 	load.c \
 	lookup3.h \
 	memory.c \

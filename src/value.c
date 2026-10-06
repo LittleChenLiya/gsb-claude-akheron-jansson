@@ -79,6 +79,8 @@ json_t *json_object(void) {
         return NULL;
     }
 
+    jsonp_ledger_record_new(&object->json);
+
     return &object->json;
 }
 
@@ -122,8 +124,8 @@ int json_object_set_new_nocheck(json_t *json, const char *key, json_t *value) {
     return json_object_setn_new_nocheck(json, key, strlen(key), value);
 }
 
-int json_object_setn_new_nocheck(json_t *json, const char *key, size_t key_len,
-                                 json_t *value) {
+static int do_object_setn_new_nocheck(json_t *json, const char *key, size_t key_len,
+                                      json_t *value, int steal) {
     json_object_t *object;
 
     if (!value)
@@ -140,7 +142,14 @@ int json_object_setn_new_nocheck(json_t *json, const char *key, size_t key_len,
         return -1;
     }
 
+    jsonp_ledger_record_set(&object->json, key, key_len, value, steal);
+
     return 0;
+}
+
+int json_object_setn_new_nocheck(json_t *json, const char *key, size_t key_len,
+                                 json_t *value) {
+    return do_object_setn_new_nocheck(json, key, key_len, value, 1);
 }
 
 int json_object_set_new(json_t *json, const char *key, json_t *value) {
@@ -159,6 +168,15 @@ int json_object_setn_new(json_t *json, const char *key, size_t key_len, json_t *
     }
 
     return json_object_setn_new_nocheck(json, key, key_len, value);
+}
+
+int json_object_set(json_t *json, const char *key, json_t *value) {
+    if (!key || !utf8_check_string(key, strlen(key)))
+        return -1;
+
+    /* The caller keeps its own reference; the object takes a new one.
+       Recorded as a retain, not a steal. */
+    return do_object_setn_new_nocheck(json, key, strlen(key), json_incref(value), 0);
 }
 
 int json_object_del(json_t *json, const char *key) {

@@ -90,6 +90,12 @@ void *jsonp_realloc(void *ptr, size_t originalSize, size_t newSize)
 void jsonp_free(void *ptr);
 char *jsonp_strndup(const char *str, size_t len) JANSSON_ATTRS((warn_unused_result));
 
+/* Debug ledger hooks; no-ops when no ledger is active.  They only
+   observe, never touch reference counts or object lifetimes. */
+void jsonp_ledger_record_new(const json_t *object);
+void jsonp_ledger_record_set(const json_t *object, const char *key, size_t key_len,
+                             const json_t *value, int steal);
+
 /* Circular reference check*/
 /* Space for "0x", double the sizeof a pointer for the hex and a terminator. */
 #define LOOP_KEY_LEN (2 + (sizeof(json_t *) * 2) + 1)
