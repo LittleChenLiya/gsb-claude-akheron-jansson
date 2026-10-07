@@ -388,6 +388,142 @@ static void test_set_nocheck() {
     json_decref(object);
 }
 
+static void test_setn_new_strict() {
+    json_t *object, *old_value, *value;
+    /* "中文" in UTF-8 */
+    const char chinese_key[] = "\xe4\xb8\xad\xe6\x96\x87";
+    /* truncated UTF-8: only the first two bytes of 中 (e4 b8 ad) */
+    const char truncated_key[] = "\xe4\xb8";
+    /* key with an embedded NUL byte */
+    const char nul_key[] = "a\0b";
+
+    object = json_object();
+    if (!object)
+        fail("unable to create object");
+
+    /* valid multibyte UTF-8 key: the reference is stolen on success */
+    value = json_integer(1);
+    if (!value)
+        fail("unable to create integer");
+    if (value->refcount != 1)
+        fail("unexpected reference count for new value");
+
+    if (json_object_setn_new_strict(object, chinese_key, 6, value))
+        fail("json_object_setn_new_strict failed for a valid UTF-8 key");
+    if (json_object_getn(object, chinese_key, 6) != value)
+        fail("json_object_getn after json_object_setn_new_strict failed");
+    if (value->refcount != 1)
+        fail("unexpected reference count after json_object_setn_new_strict");
+
+    /* truncated UTF-8 key: fails and the caller keeps the value */
+    value = json_integer(2);
+    if (!json_object_setn_new_strict(object, truncated_key, 2, value))
+        fail("json_object_setn_new_strict accepted a truncated UTF-8 key");
+    if (value->refcount != 1)
+        fail("json_object_setn_new_strict stole the reference on invalid UTF-8");
+    if (json_object_size(object) != 1)
+        fail("invalid object size after failed json_object_setn_new_strict");
+    json_decref(value); /* must be safe to release */
+
+    /* embedded NUL in key: fails and the caller keeps the value */
+    value = json_integer(3);
+    if (!json_object_setn_new_strict(object, nul_key, 3, value))
+        fail("json_object_setn_new_strict accepted a key with an embedded NUL");
+    if (value->refcount != 1)
+        fail("json_object_setn_new_strict stole the reference on embedded NUL");
+    if (json_object_size(object) != 1)
+        fail("invalid object size after failed json_object_setn_new_strict");
+    json_decref(value); /* must be safe to release */
+
+    /* invalid arguments: fail and the caller keeps the value */
+    value = json_integer(4);
+    if (!json_object_setn_new_strict(object, NULL, 0, value))
+        fail("json_object_setn_new_strict accepted a NULL key");
+    if (!json_object_setn_new_strict(NULL, chinese_key, 6, value))
+        fail("json_object_setn_new_strict accepted a NULL object");
+    if (!json_object_setn_new_strict(object, chinese_key, 6, NULL))
+        fail("json_object_setn_new_strict accepted a NULL value");
+    if (value->refcount != 1)
+        fail("json_object_setn_new_strict stole the reference on bad arguments");
+    json_decref(value);
+
+    /* replacing an existing key releases the old value as usual */
+    old_value = json_integer(10);
+    json_incref(old_value); /* hold an extra reference to observe the release */
+    if (json_object_setn_new_strict(object, chinese_key, 6, old_value))
+        fail("json_object_setn_new_strict failed to set replacement target");
+    if (old_value->refcount != 2)
+        fail("unexpected reference count for old value");
+
+    value = json_integer(11);
+    if (json_object_setn_new_strict(object, chinese_key, 6, value))
+        fail("json_object_setn_new_strict failed to replace a value");
+    if (old_value->refcount != 1)
+        fail("old value was not released on replacement");
+    if (json_integer_value(json_object_getn(object, chinese_key, 6)) != 11)
+        fail("replacement value not stored by json_object_setn_new_strict");
+    json_decref(old_value);
+
+    json_decref(object);
+}
+
+static size_t strict_oom_allocs_left;
+
+static void *strict_oom_malloc(size_t size) {
+    if (strict_oom_allocs_left == 0)
+        return NULL;
+
+    strict_oom_allocs_left--;
+    return malloc(size);
+}
+
+static void strict_oom_free(void *ptr) { free(ptr); }
+
+static void test_setn_new_strict_oom() {
+    json_t *object, *old_value, *value;
+    /* "中文" in UTF-8 */
+    const char chinese_key[] = "\xe4\xb8\xad\xe6\x96\x87";
+
+    object = json_object();
+    old_value = json_integer(42);
+    if (!object || !old_value)
+        fail("unable to create test values");
+
+    if (json_object_setn_new_strict(object, chinese_key, 6, old_value))
+        fail("json_object_setn_new_strict failed for a valid UTF-8 key");
+
+    value = json_integer(7);
+    if (!value)
+        fail("unable to create integer");
+
+    /* make all further allocations fail: adding a new key must fail
+       and leave both the new value and the existing entry untouched */
+    json_set_alloc_funcs(strict_oom_malloc, strict_oom_free);
+    strict_oom_allocs_left = 0;
+
+    if (!json_object_setn_new_strict(object, "newkey", 6, value))
+        fail("json_object_setn_new_strict succeeded despite allocation failure");
+
+    /* restore the default allocation functions */
+    json_set_alloc_funcs2(malloc, realloc, free);
+
+    /* the caller still owns the new value and may release it */
+    if (value->refcount != 1)
+        fail("json_object_setn_new_strict stole the reference on allocation "
+             "failure");
+    json_decref(value);
+
+    /* the existing entry is intact and the new key was not added */
+    if (json_object_getn(object, chinese_key, 6) != old_value)
+        fail("existing entry corrupted by failed json_object_setn_new_strict");
+    if (json_object_getn(object, "newkey", 6) != NULL)
+        fail("key added despite allocation failure");
+    if (json_object_size(object) != 1)
+        fail("invalid object size after failed json_object_setn_new_strict");
+
+    json_decref(object);
+}
+
 static void test_iterators() {
     json_t *object, *foo, *bar, *baz;
     void *iter;
@@ -789,6 +925,8 @@ static void run_tests() {
     test_recursive_updates();
     test_circular();
     test_set_nocheck();
+    test_setn_new_strict();
+    test_setn_new_strict_oom();
     test_iterators();
     test_preserve_order();
     test_object_foreach();

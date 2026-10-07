@@ -712,6 +712,22 @@ allowed in object keys.
 
    .. versionadded:: 2.14
 
+.. function:: int json_object_setn_new_strict(json_t *object, const char *key, size_t key_len, json_t *value)
+
+   Like :func:`json_object_setn_new`, but stricter, and with a
+   different reference stealing contract. The *key* is required to be
+   valid UTF-8 and must not contain an embedded NUL byte. The
+   reference to *value* is stolen **only** if the key passes these
+   checks and the value was actually stored in *object*; on any
+   failure (invalid key, invalid arguments or memory allocation
+   failure) the caller keeps the ownership of *value* and is
+   responsible for releasing it.
+
+   When an existing key is replaced, the old value is released as
+   usual.
+
+   .. versionadded:: 2.16
+
 .. function:: int json_object_del(json_t *object, const char *key)
 
    Delete *key* from *object* if it exists. Returns 0 on success, or
@@ -2042,6 +2058,7 @@ List of API for fixed-length keys:
 * :c:func:`json_object_setn_nocheck`
 * :c:func:`json_object_setn_new`
 * :c:func:`json_object_setn_new_nocheck`
+* :c:func:`json_object_setn_new_strict`
 * :c:func:`json_object_deln`
 * :c:func:`json_object_iter_key_len`
 * :c:func:`json_object_keylen_foreach`

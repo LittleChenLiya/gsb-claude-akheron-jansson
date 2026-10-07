@@ -195,6 +195,8 @@ int json_object_setn_new(json_t *object, const char *key, size_t key_len, json_t
 int json_object_set_new_nocheck(json_t *object, const char *key, json_t *value);
 int json_object_setn_new_nocheck(json_t *object, const char *key, size_t key_len,
                                  json_t *value);
+int json_object_setn_new_strict(json_t *object, const char *key, size_t key_len,
+                                json_t *value);
 int json_object_del(json_t *object, const char *key);
 int json_object_deln(json_t *object, const char *key, size_t key_len);
 int json_object_clear(json_t *object);
