@@ -712,6 +712,27 @@ allowed in object keys.
 
    .. versionadded:: 2.14
 
+.. function:: int json_object_set_new_strict(json_t *object, const char *key, json_t *value)
+              int json_object_setn_new_strict(json_t *object, const char *key, size_t key_len, json_t *value)
+
+   Like :func:`json_object_set_new` and :func:`json_object_setn_new`,
+   but stricter about both the key and the ownership of *value*:
+
+   * The key is fully validated (valid UTF-8, no embedded null bytes)
+     before anything is stored.
+   * The reference to *value* is only stolen on success. On any error
+     -- invalid arguments, an invalid key, or a failed allocation --
+     the caller keeps ownership of *value* and must release it.
+
+   When the call succeeds, an existing value for *key* is replaced and
+   released like with :func:`json_object_set_new`.
+
+   The macros :func:`json_object_set_strict` and
+   :func:`json_object_setn_strict` are the reference-incrementing
+   counterparts, analogous to :func:`json_object_set`.
+
+   .. versionadded:: 2.16
+
 .. function:: int json_object_del(json_t *object, const char *key)
 
    Delete *key* from *object* if it exists. Returns 0 on success, or

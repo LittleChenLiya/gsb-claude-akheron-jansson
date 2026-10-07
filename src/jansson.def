@@ -39,6 +39,8 @@ EXPORTS
     json_object_setn_new
     json_object_set_new_nocheck
     json_object_setn_new_nocheck
+    json_object_set_new_strict
+    json_object_setn_new_strict
     json_object_del
     json_object_deln
     json_object_clear

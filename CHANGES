@@ -1,3 +1,16 @@
+Unreleased
+==========
+
+* New features:
+
+  - Add `json_object_set_new_strict()` and
+    `json_object_setn_new_strict()` (plus the reference-incrementing
+    inline variants `json_object_set_strict()` and
+    `json_object_setn_strict()`). These validate the key (valid UTF-8,
+    no embedded null bytes) before stealing the reference to the new
+    value; on any error, including allocation failure, the caller
+    keeps ownership of the value
+
 Version 2.15.1
 ==============
 

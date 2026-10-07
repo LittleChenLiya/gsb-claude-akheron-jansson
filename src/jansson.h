@@ -195,6 +195,9 @@ int json_object_setn_new(json_t *object, const char *key, size_t key_len, json_t
 int json_object_set_new_nocheck(json_t *object, const char *key, json_t *value);
 int json_object_setn_new_nocheck(json_t *object, const char *key, size_t key_len,
                                  json_t *value);
+int json_object_set_new_strict(json_t *object, const char *key, json_t *value);
+int json_object_setn_new_strict(json_t *object, const char *key, size_t key_len,
+                                json_t *value);
 int json_object_del(json_t *object, const char *key);
 int json_object_deln(json_t *object, const char *key, size_t key_len);
 int json_object_clear(json_t *object);
@@ -262,6 +265,16 @@ static JSON_INLINE int json_object_set_nocheck(json_t *object, const char *key,
 static JSON_INLINE int json_object_setn_nocheck(json_t *object, const char *key,
                                                 size_t key_len, json_t *value) {
     return json_object_setn_new_nocheck(object, key, key_len, json_incref(value));
+}
+
+static JSON_INLINE int json_object_set_strict(json_t *object, const char *key,
+                                              json_t *value) {
+    return json_object_set_new_strict(object, key, json_incref(value));
+}
+
+static JSON_INLINE int json_object_setn_strict(json_t *object, const char *key,
+                                               size_t key_len, json_t *value) {
+    return json_object_setn_new_strict(object, key, key_len, json_incref(value));
 }
 
 static JSON_INLINE int json_object_iter_set(json_t *object, void *iter, json_t *value) {

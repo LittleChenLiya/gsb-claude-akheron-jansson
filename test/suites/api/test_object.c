@@ -388,6 +388,112 @@ static void test_set_nocheck() {
     json_decref(object);
 }
 
+static void *strict_oom_malloc(size_t size) {
+    (void)size;
+    return NULL;
+}
+
+static void test_set_strict() {
+    /* "密钥" (valid UTF-8 Chinese key) */
+    const char zh_key[] = "\xe5\xaf\x86\xe9\x92\xa5";
+    /* truncated UTF-8 sequence */
+    const char trunc_key[] = "abc\xe5\xaf";
+    /* key with an embedded NUL byte */
+    const char nul_key[] = "em\0bed";
+    json_t *object, *value, *old;
+
+    object = json_object();
+    if (!object)
+        fail("unable to create object");
+
+    /* valid fixed-length Chinese key: reference is stolen on success */
+    value = json_integer(1);
+    if (json_object_setn_new_strict(object, zh_key, sizeof(zh_key) - 1, value))
+        fail("json_object_setn_new_strict failed for a valid Chinese key");
+    if (json_object_getn(object, zh_key, sizeof(zh_key) - 1) != value)
+        fail("json_object_getn after json_object_setn_new_strict failed");
+    if (value->refcount != 1)
+        fail("refcount is wrong after json_object_setn_new_strict");
+
+    /* null-terminated variant and incref'ing inline wrappers */
+    value = json_integer(2);
+    if (json_object_set_new_strict(object, "hello", value))
+        fail("json_object_set_new_strict failed");
+    if (json_object_get(object, "hello") != value)
+        fail("json_object_get after json_object_set_new_strict failed");
+
+    old = json_integer(10);
+    if (json_object_setn_strict(object, "key", 3, old))
+        fail("json_object_setn_strict failed");
+    if (old->refcount != 2)
+        fail("json_object_setn_strict did not incref the value");
+
+    /* replacing a key releases the old value per the usual rules */
+    value = json_integer(20);
+    if (json_object_setn_new_strict(object, "key", 3, value))
+        fail("json_object_setn_new_strict failed to replace a key");
+    if (json_integer_value(json_object_getn(object, "key", 3)) != 20)
+        fail("json_object_getn after replacement failed");
+    if (old->refcount != 1)
+        fail("old value was not released on replacement");
+    json_decref(old);
+
+    /* truncated UTF-8 key: fails and the caller keeps the value */
+    value = json_integer(3);
+    if (json_object_setn_new_strict(object, trunc_key, sizeof(trunc_key) - 1, value) !=
+        -1)
+        fail("json_object_setn_new_strict accepted a truncated UTF-8 key");
+    if (value->refcount != 1)
+        fail("value reference was stolen on truncated UTF-8 key");
+    if (json_object_size(object) != 3)
+        fail("object was modified by a failed strict set");
+    json_decref(value); /* still owned and freeable by the caller */
+
+    /* embedded NUL key: fails and the caller keeps the value */
+    value = json_integer(4);
+    if (json_object_setn_new_strict(object, nul_key, sizeof(nul_key) - 1, value) != -1)
+        fail("json_object_setn_new_strict accepted an embedded NUL key");
+    if (value->refcount != 1)
+        fail("value reference was stolen on embedded NUL key");
+    if (json_object_size(object) != 3)
+        fail("object was modified by a failed strict set");
+    json_decref(value);
+
+    /* bad arguments: fail without touching the value */
+    value = json_integer(5);
+    if (json_object_setn_new_strict(object, NULL, 3, value) != -1)
+        fail("json_object_setn_new_strict accepted a NULL key");
+    if (json_object_setn_new_strict(NULL, "k", 1, value) != -1)
+        fail("json_object_setn_new_strict accepted a NULL object");
+    if (json_object_setn_new_strict(object, "k", 1, NULL) != -1)
+        fail("json_object_setn_new_strict accepted a NULL value");
+    if (json_object_setn_new_strict(object, "k", 1, object) != -1)
+        fail("json_object_setn_new_strict accepted object == value");
+    if (json_object_set_new_strict(object, NULL, value) != -1)
+        fail("json_object_set_new_strict accepted a NULL key");
+    if (value->refcount != 1)
+        fail("value reference was stolen on bad arguments");
+    json_decref(value);
+
+    /* allocation failure: the new value is left to the caller */
+    value = json_integer(6);
+    if (!value)
+        fail("unable to create integer");
+    json_set_alloc_funcs(strict_oom_malloc, free);
+    if (json_object_setn_new_strict(object, "oomkey", 6, value) != -1)
+        fail("json_object_setn_new_strict did not fail on OOM");
+    json_set_alloc_funcs(malloc, free);
+    if (value->refcount != 1)
+        fail("value reference was stolen on allocation failure");
+    if (json_object_get(object, "oomkey"))
+        fail("key was added despite allocation failure");
+    if (json_object_size(object) != 3)
+        fail("object was modified by an OOM strict set");
+    json_decref(value); /* caller still owns it and can release it */
+
+    json_decref(object);
+}
+
 static void test_iterators() {
     json_t *object, *foo, *bar, *baz;
     void *iter;
@@ -789,6 +895,7 @@ static void run_tests() {
     test_recursive_updates();
     test_circular();
     test_set_nocheck();
+    test_set_strict();
     test_iterators();
     test_preserve_order();
     test_object_foreach();

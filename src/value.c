@@ -161,6 +161,37 @@ int json_object_setn_new(json_t *json, const char *key, size_t key_len, json_t *
     return json_object_setn_new_nocheck(json, key, key_len, value);
 }
 
+int json_object_set_new_strict(json_t *json, const char *key, json_t *value) {
+    if (!key)
+        return -1;
+
+    return json_object_setn_new_strict(json, key, strlen(key), value);
+}
+
+int json_object_setn_new_strict(json_t *json, const char *key, size_t key_len,
+                                json_t *value) {
+    json_object_t *object;
+
+    if (!value)
+        return -1;
+
+    if (!key || !json_is_object(json) || json == value)
+        return -1;
+
+    /* validate the key before stealing the reference to value */
+    if (!utf8_check_string(key, key_len) || memchr(key, '\0', key_len))
+        return -1;
+
+    object = json_to_object(json);
+
+    if (hashtable_set(&object->hashtable, key, key_len, value)) {
+        /* allocation failed: leave value to the caller */
+        return -1;
+    }
+
+    return 0;
+}
+
 int json_object_del(json_t *json, const char *key) {
     if (!key)
         return -1;
